@@ -1,9 +1,20 @@
 pipeline {
-    agent any
+      agent {
+        kubernetes {
+        label 'build-agent'
+        defaultContainer 'kubectl'
+        yamlFile 'build-pod.yaml'
+     } 
+  }
     environment{
         DOCKER_TAG = getDockerTag()
+        IMAGE_TAG = "${env.BUILD_NUMBER}" 
         IMAGE_URL_WITH_TAG = "opeomotayo/node-app:${DOCKER_TAG}"
     }
+    options {
+      buildDiscarder(logRotator(numToKeepStr: '3'))
+   }
+
     stages{
         stage('Build Docker Image'){
             steps{

@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Pod
+metadata:
+spec:
+  serviceAccountName: jenkins # a service account that can deploy to all namespaces
+  containers:  # a list of containers that you want present for your build, you can define a default container in the Jenkinsfile
+    - name: kubectl
+      image: gcr.io/cloud-builders/kubectl
+      command:
+        - cat
+      tty: true
+    - name: node
+      image: node:10
+      command:
+        - cat
+      tty: true
+    - name: docker
+      image: docker:latest
+      command: ["tail", "-f", "/dev/null"]
+      imagePullPolicy: Always
+      volumeMounts:
+        - name: docker
+          mountPath: /var/run/docker.sock # We use the k8s host docker engine
+    - name: security-tools
+      image: opeomotayo/security-tools:latest
+      imagePullPolicy: Always
+      volumeMounts:
+        - name: docker
+          mountPath: /var/run/docker.sock
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 50Mi
+        limits:
+          cpu: 500m
+          memory: 500Mi
+    - name: aqua
+      image: opeomotayo/aqua:latest
+      command:
+        - cat
+      tty: true
+    - name: maven
+      image: maven:3.8.1-jdk-8
+      command:
+        - cat
+      tty: true
+    # - name: jq
+    #   image: stedolan/jq
+    #   command:
+    #     - cat
+    #   tty: true
+    # - name: skaffold
+    #   image: gcr.io/k8s-skaffold/skaffold:v1.27.0
+    #   command:
+    #     - cat
+    #   tty: true
+    # - name: terraform
+    #   image: hashicorp/terraform:1.1.2  # XXX: set this to match the Terraform version you need
+    #   #imagePullPolicy: Always
+    #   command:
+    #     - cat
+    #   tty: true
+    # - name: trivy
+    # image: aquasec/trivy:0.22.0
+    #  image: aquasec/trivy:latest
+    #  imagePullPolicy: Always
+    #  command:
+    #    - cat
+    #  tty: true
+    # - name: checkov
+    #   #image: bridgecrew/checkov:2.0.715
+    #   image: bridgecrew/checkov:latest
+    #   imagePullPolicy: Always
+    #   command:
+    #     - cat
+    #   tty: true
+    #- name: golang
+    #  image: golang:1.10
+    #  command:
+    #    - cat
+    #  tty: true
+    # - name: megalinter
+    #   image: megalinter/megalinter:v5
+    #   imagePullPolicy: Always
+    #   command:
+    #     - cat
+    #   env:
+    #     - name: VALIDATE_ALL_CODEBASE
+    #       value: 'true'
+    #   tty: true
+      volumeMounts:
+        #- mountPath: /home/jenkins/agent
+        - mountPath: /tmp/lint
+          name: workspace-volume
+          readOnly: false
+  volumes:
+    - name: docker
+      hostPath:
+        path: /var/run/docker.sock
