@@ -2,13 +2,13 @@ pipeline {
       agent {
         kubernetes {
         label 'build-agent'
-        defaultContainer 'kubectl'
+        defaultContainer 'docker'
         yamlFile 'build-pod.yaml'
-     } 
+     }
   }
     environment{
         DOCKER_TAG = getDockerTag()
-        IMAGE_TAG = "${env.BUILD_NUMBER}" 
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
         IMAGE_URL_WITH_TAG = "opeomotayo/node-app:${DOCKER_TAG}"
     }
     options {
@@ -31,12 +31,14 @@ pipeline {
         }
         stage('Deploy to K8s'){
             steps{
-                sh "chmod +x changeTag.sh"
-                sh "./changeTag.sh ${DOCKER_TAG}"
-                sshagent(['devops-server']) {
-                    withCredentials([string(credentialsId: 'nexus-pwd', variable: 'nexusPwd')]) {
-                        sh "scp -o StrictHostKeyChecking=no service.yaml deployment.yaml ope@49.13.238.19:/home/ope"
-                        sh "ssh ope@49.13.238.19 kubectl apply -f ."
+                container('docker') {
+                    sh "chmod +x changeTag.sh"
+                    sh "./changeTag.sh ${DOCKER_TAG}"
+                    sshagent(['devops-server']) {
+                        withCredentials([string(credentialsId: 'nexus-pwd', variable: 'nexusPwd')]) {
+                            sh "scp -o StrictHostKeyChecking=no service.yaml deployment.yaml ope@49.13.238.19:/home/ope"
+                            sh "ssh ope@49.13.238.19 kubectl apply -f ."
+                        }
                     }
                 }
             }
